@@ -68,7 +68,7 @@ class RsyncBackupConfig(BackupConfig):
     def backup(self) -> None:
         if self._check_folder_exist_on_backup_host(f"{self.backup_host.rsync_target}/{self.target_folder}"):
             _log.info("[Rsync][backup] backup started")
-            cmd = ("rsync -rPv "
+            cmd = ("rsync -arPv "
                    f"{self.source} "
                    f"{self.backup_host.user}@{self.backup_host.host}:{self.backup_host.rsync_target}/{self.target_folder} ")
             _log.info(cmd)
