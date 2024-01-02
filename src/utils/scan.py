@@ -1,18 +1,21 @@
 #!/home/debauer/utils/.venv/bin/python3
 from __future__ import annotations
 
+import subprocess
+import sys
+
 from argparse import ArgumentParser
 from argparse import Namespace
 from datetime import datetime
+from logging import getLogger
 
-from helper.process import command_print
-
+_log = getLogger(__name__)
 
 sources = ["Flatbed", "ADF"]
 resolution = [75, 100, 150, 200, 300]
 
 imagename = datetime.now().isoformat()
-devices = {"home": "airscan:w1:Samsung Electronics Co., Ltd. M2070 Series", "hoelle": "airscan:w0:Brother MFC-J6720DW"}
+devices = {"home": "smfp:net;192.168.1.106", "hoelle": "airscan:w0:Brother MFC-J6720DW"}
 
 
 def parse_args() -> Namespace:
@@ -29,48 +32,50 @@ def parse_args() -> Namespace:
     return parser.parse_args()
 
 
-def build_dokument():
+def build_dokument(*, batch: bool) -> None:
     tempname = imagename
-    if args.batch:
+    if batch:
         tempname = "batch*"
     cmd = f"convert {tempname}.jpg {imagename}.pdf"
-    command_print(cmd, timeout=None)
+    try:
+        connect = subprocess.Popen(args=cmd, shell=True)
+        while connect.poll() is None:
+            pass
+    except KeyboardInterrupt:
+        exit()
 
 
-def scan(
-    name: str,
-    device: str = "home",
-    source: str = "Flatbed",
-    brightness: int = 0,
-    contrast: int = 0,
-    dpi: int = 300,
-    batch: bool = False,
-) -> None:
+def main() -> None:
+    args = parse_args()
+    name = args.name
+    device = args.scanner
+    source = args.source
+    brightness = args.brightness
+    contrast = args.contrast
+    dpi = args.dpi
+    batch = args.batch
     device = devices[device]
     cmd = f'scanimage -d "{device}" -p -v '
-    cmd += f" --source {source}"
-    cmd += f" --brightness {brightness}"
-    cmd += f" --contrast {contrast}"
+    # cmd += f" --source {source}"
+    # cmd += f" --brightness {brightness}"
+    # cmd += f" --contrast {contrast}"
     cmd += f" --resolution {dpi}"
     if batch:
-        batch += " --batch=batch%d.jpg"
+        cmd += " --batch=batch%d.jpg"
         if source == "Flatbed":
-            batch += " --batch-prompt "
+            cmd += " --batch-prompt "
     else:
         cmd += f" -o {name}.jpeg"
-    command_print(cmd, timeout=None)
+    _log.info(cmd)
+    try:
+        connect = subprocess.Popen(args=cmd, shell=True)
+        while connect.poll() is None:
+            pass
+    except KeyboardInterrupt:
+        sys.exit()
     if batch:
-        build_dokument()
+        build_dokument(batch=batch)
 
 
 if __name__ == "__main__":
-    args = parse_args()
-    scan(
-        name=args.name,
-        device=args.scanner,
-        source=args.source,
-        brightness=args.brightness,
-        contrast=args.contrast,
-        dpi=args.dpi,
-        batch=args.batch,
-    )
+    main()
