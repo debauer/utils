@@ -2,65 +2,34 @@
 from __future__ import annotations
 
 import subprocess
+import sys
 
 from argparse import ArgumentParser
-from dataclasses import dataclass
+from argparse import Namespace
 
-default_password_file = "/home/debauer/.resticcredentials"
-default_exclude_file = "/home/debauer/scripts/config/backup_ignore"
-
-
-@dataclass
-class BackupHost:
-    target: str = ""
-    password_file: str = default_password_file
-    host: str = ""
+from utils._backup.config import BackupConfig, ResticBackupConfig
+from utils._backup.host import BackupHost
 
 
-@dataclass
-class BackupConfig:
-    host: BackupHost
-    sudo: bool = False
-    source: str = ""
-    exclude_file: str = default_exclude_file
-    verbose: bool = False
-    dryrun: bool = False
+karl = BackupHost(
+    host="karl.lan",
+    target="/mnt/data/backups/synyx_t14/restic",
+)
 
-    def _base_command(self) -> str:
-        return (f"{'sudo ' if self.sudo else ''}restic -r {self.host.host}{self.host.target} "
-                f"{'--verbose ' if self.verbose else ''} "
-                )
+herbert = BackupHost(
+    host="herbert.lan",
+    target="/mnt/data/backups/synyx_t14/restic",
+    wol=True,
+    mac="D0:50:99:29:2E:91",
+)
 
-    def _password_file(self) -> str:
-        return f"--password-file '{self.host.password_file}' "
-
-    def backup_command(self) -> str:
-        return (
-            f"{self._base_command()}"
-            f"backup "
-            f"{self._password_file()}"
-            f"--exclude-file {self.exclude_file} "
-            f"{'-n ' if self.dryrun else ''} "
-            f"{self.source} "
-        )
-
-    def list_command(self) -> str:
-        return (
-            f"{self._base_command()}"
-            f"snapshots "
-            f"{self._password_file()}"
-            f"--path={self.source}"
-        )
+target = [
+    ResticBackupConfig(hostname="bauer-t14s", backup_host=herbert, source="/etc", sudo=True),
+    ResticBackupConfig(hostname="bauer-t14s", backup_host=herbert, source="/home/debauer")
+]
 
 
-# restic -r /srv/restic-repo check
-
-herbert = BackupHost(host="sftp:debauer@herbert:", target="/mnt/data/backups/synyx_t14/restic")
-
-target = [BackupConfig(host=herbert, source="/etc", sudo=True), BackupConfig(host=herbert, source="/home/debauer")]
-
-
-def parse():
+def parse() -> Namespace:
     parser = ArgumentParser(description="Backup System")
     parser.add_argument("-n", "--dryrun", action="store_const", const="dryrun", help="dry-run")
     parser.add_argument("-v", "--verbose", action="store_const", const="verbose", help="verbose")
@@ -74,7 +43,7 @@ def _backup(conf: BackupConfig) -> None:
         while connect.poll() is None:
             pass
     except KeyboardInterrupt:
-        exit()
+        sys.exit()
 
 
 def _list(conf: BackupConfig) -> None:
@@ -84,15 +53,18 @@ def _list(conf: BackupConfig) -> None:
         while connect.poll() is None:
             pass
     except KeyboardInterrupt:
-        exit()
+        sys.exit()
 
 
-def main():
+def main() -> None:
     args = parse()
     verbose = args.verbose
     dryrun = args.dryrun
     list = args.list
 
+    herbert.wake_up()
+
+    herbert.poweroff()
 
 
     if verbose:
@@ -103,13 +75,13 @@ def main():
         for a in target:
             a.dryrun = True
 
-    if list:
-        for t in target:
-            _list(t)
-        exit()
-
-    for t in target:
-        _backup(t)
+#    if list:
+#        for t in target:
+#            _list(t)
+#        exit()
+#
+#    for t in target:
+#        _backup(t)
 
 
 if __name__ == "__main__":
