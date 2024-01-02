@@ -27,11 +27,11 @@ herbert = BackupHost(
 backup_configs = [
     ResticBackupConfig(hostname="bauer-t14s", backup_host=karl, source="/etc", sudo=True),
     ResticBackupConfig(hostname="bauer-t14s", backup_host=karl, source="/home/debauer"),
-    RsyncBackupConfig(hostname="karl", backup_host=herbert, source="/mnt/data/files", target_folder="files"),
-    RsyncBackupConfig(hostname="karl", backup_host=herbert, source="/mnt/data/medien/ebooks", target_folder="medien/ebooks"),
-    RsyncBackupConfig(hostname="karl", backup_host=herbert, source="/mnt/data/medien/musik", target_folder="medien/musik"),
-    RsyncBackupConfig(hostname="karl", backup_host=herbert, source="/mnt/data/medien/software", target_folder="medien/software"),
-    RsyncBackupConfig(hostname="karl", backup_host=herbert, source="/mnt/data/medien/audiobooks", target_folder="medien/audiobooks"),
+    RsyncBackupConfig(hostname="karl", backup_host=herbert, source="/mnt/data/files/", target_folder="files"),
+    RsyncBackupConfig(hostname="karl", backup_host=herbert, source="/mnt/data/medien/ebooks/", target_folder="medien/ebooks"),
+    RsyncBackupConfig(hostname="karl", backup_host=herbert, source="/mnt/data/medien/musik/", target_folder="medien/musik"),
+    RsyncBackupConfig(hostname="karl", backup_host=herbert, source="/mnt/data/medien/software/", target_folder="medien/software"),
+    RsyncBackupConfig(hostname="karl", backup_host=herbert, source="/mnt/data/medien/audiobooks/", target_folder="medien/audiobooks"),
 ]
 
 
