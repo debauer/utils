@@ -1,6 +1,7 @@
 #!/home/debauer/utils/.venv/bin/python3
 from __future__ import annotations
 
+import random
 import sys
 
 from argparse import ArgumentParser
@@ -30,7 +31,7 @@ def main() -> None:
 
     wallpaper = [Wallpaper(wg, name=wg.name.split(".")[0]) for wg in wallpaper_glob]
     choices = [wg.name for wg in wallpaper]
-
+    print(sys.argv)
     if len(sys.argv) == 1:  # bit hacky because of positional argument in argparse
         print("available wallpapers:\n")
         for i, wp in enumerate(wallpaper):
@@ -39,6 +40,8 @@ def main() -> None:
         print()
         wallpaper_id = int(input("choose wallpaper: "))
         wallpaper_name = wallpaper[wallpaper_id].name
+    elif len(sys.argv) == 2 and sys.argv[1] == "random":
+        wallpaper_name = random.choice(choices)
     else:
         parser = ArgumentParser(description="System to record the data on a trimodal crane")
         parser.add_argument("wallpaper", type=str, help="wallpaper", choices=choices)

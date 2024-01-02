@@ -41,7 +41,7 @@ class BackupConfig:
         exist = not self._call(cmd, verbose=True)
         if verbose:
             _log.info(f"[Backup][_check_folder_exist_on_backup_host] exist: {exist}")
-        if not exist:
+        if not exist and create:
             _log.info(f"[Backup][_check_folder_exist_on_backup_host] create folder {folder}")
             cmd = ["ssh", f"{self.backup_host.user}@{self.backup_host.host}", f"mkdir {folder} -p"]
             self._call(cmd, verbose=True)
@@ -66,7 +66,7 @@ class RsyncBackupConfig(BackupConfig):
     target_folder: str = ""
 
     def backup(self) -> None:
-        if self._check_folder_exist_on_backup_host(f"{self.backup_host.rsync_target}/{self.target_folder}"):
+        if self._check_folder_exist_on_backup_host(f"{self.backup_host.rsync_target}/{self.target_folder}", create=True):
             _log.info("[Rsync][backup] backup started")
             cmd = ("rsync -arPv "
                    f"{self.source} "
@@ -98,7 +98,7 @@ class ResticBackupConfig(BackupConfig):
 
     def backup(self) -> None:
         _log.info("[Restic][backup] backup started")
-        if self._check_folder_exist_on_backup_host(self.backup_host.restic_target):
+        if self._check_folder_exist_on_backup_host(self.backup_host.restic_target, create=True):
             cmd = (
                 f"{self._base_command()}"
                 f"backup "
