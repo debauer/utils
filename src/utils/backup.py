@@ -1,31 +1,37 @@
 #!/home/debauer/utils/.venv/bin/python3
 from __future__ import annotations
 
-import subprocess
+import socket
 import sys
 
 from argparse import ArgumentParser
 from argparse import Namespace
 
-from utils._backup.config import BackupConfig, ResticBackupConfig
+from utils._backup.config import ResticBackupConfig
+from utils._backup.config import RsyncBackupConfig
 from utils._backup.host import BackupHost
 
 
 karl = BackupHost(
     host="karl.lan",
-    target="/mnt/data/backups/synyx_t14/restic",
+    base_backup_folder="/mnt/data/backups",
 )
 
 herbert = BackupHost(
     host="herbert.lan",
-    target="/mnt/data/backups/synyx_t14/restic",
+    base_backup_folder="/mnt/backup",
     wol=True,
     mac="D0:50:99:29:2E:91",
 )
 
-target = [
-    ResticBackupConfig(hostname="bauer-t14s", backup_host=herbert, source="/etc", sudo=True),
-    ResticBackupConfig(hostname="bauer-t14s", backup_host=herbert, source="/home/debauer")
+backup_configs = [
+    ResticBackupConfig(hostname="bauer-t14s", backup_host=karl, source="/etc", sudo=True),
+    ResticBackupConfig(hostname="bauer-t14s", backup_host=karl, source="/home/debauer"),
+    RsyncBackupConfig(hostname="karl", backup_host=herbert, source="/mnt/data/files", target_folder="files"),
+    RsyncBackupConfig(hostname="karl", backup_host=herbert, source="/mnt/data/medien/ebooks", target_folder="medien/ebooks"),
+    RsyncBackupConfig(hostname="karl", backup_host=herbert, source="/mnt/data/medien/musik", target_folder="medien/musik"),
+    RsyncBackupConfig(hostname="karl", backup_host=herbert, source="/mnt/data/medien/software", target_folder="medien/software"),
+    RsyncBackupConfig(hostname="karl", backup_host=herbert, source="/mnt/data/medien/audiobooks", target_folder="medien/audiobooks"),
 ]
 
 
@@ -37,51 +43,37 @@ def parse() -> Namespace:
     return parser.parse_args()
 
 
-def _backup(conf: BackupConfig) -> None:
-    try:
-        connect = subprocess.Popen(args=conf.backup_command(), shell=True)
-        while connect.poll() is None:
-            pass
-    except KeyboardInterrupt:
-        sys.exit()
-
-
-def _list(conf: BackupConfig) -> None:
-    print(conf.list_command())
-    try:
-        connect = subprocess.Popen(args=conf.list_command(), shell=True)
-        while connect.poll() is None:
-            pass
-    except KeyboardInterrupt:
-        sys.exit()
-
-
 def main() -> None:
     args = parse()
     verbose = args.verbose
     dryrun = args.dryrun
-    list = args.list
-
-    herbert.wake_up()
-
-    herbert.poweroff()
-
-
+    list_backups = args.list
+    hostname = socket.gethostname()
+    filtered_configs = [x for x in backup_configs if x.hostname == hostname]
     if verbose:
-        for a in target:
+        print("USED CONFIGS:")
+        for f in filtered_configs:
+            print(f)
+    if verbose:
+        for a in filtered_configs:
             a.verbose = True
 
     if dryrun:
-        for a in target:
+        for a in filtered_configs:
             a.dryrun = True
 
-#    if list:
-#        for t in target:
-#            _list(t)
-#        exit()
-#
-#    for t in target:
-#        _backup(t)
+    if list_backups:
+        for t in filtered_configs:
+            t.list()
+        sys.exit()
+    for t in filtered_configs:
+        t.backup_host.wake_up()
+
+    for t in filtered_configs:
+        t.backup()
+
+    for t in filtered_configs:
+        t.backup_host.poweroff()
 
 
 if __name__ == "__main__":

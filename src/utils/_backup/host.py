@@ -1,11 +1,12 @@
+#!/home/debauer/utils/.venv/bin/python3
 from __future__ import annotations
 
+import socket
 import subprocess
 import sys
 
 from dataclasses import dataclass
-from typing import Any
-
+from typing import Any, Union
 
 default_password_file = "/home/debauer/.resticcredentials"
 
@@ -13,26 +14,31 @@ default_password_file = "/home/debauer/.resticcredentials"
 @dataclass
 class BackupHost:
     wol: bool = False
-    target: str = ""
+    base_backup_folder : str = ""
     user: str = "debauer"
     password_file: str = default_password_file
     host: str = ""
     mac: str = ""
     ping_retry: int = 20
+    
+    @property
+    def restic_target(self) -> str:
+        hostname = socket.gethostname()
+        return f"{self.base_backup_folder}/{hostname}/restic"
 
-    def sftp(self) -> str:
-        return f"sftp:{self.user}@{self.host}:"
+    @property
+    def rsync_target(self) -> str:
+        hostname = socket.gethostname()
+        return f"{self.base_backup_folder}/{hostname}/rsync"
 
-    def _call(self, cmd: str | list) -> Any:
-        if isinstance(cmd, str):
-            cmd_splitted = cmd.split(" ")
-        else: 
-            cmd_splitted = cmd
+    def _call(self, cmd: Union[str, list]) -> Any:
+        cmd_splitted = cmd.split(" ") if isinstance(cmd, str) else cmd
+        output = None if self.verbose else subprocess.DEVNULL
         try:
-            return subprocess.call(cmd_splitted, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)  # noqa: S603
+            return subprocess.call(cmd_splitted, stdout=None, stderr=None)  # noqa: S603
         except KeyboardInterrupt:
             sys.exit()
-
+            
     def wake_up(self) -> None:
         if self.wol:
             wol_cmd = f"wol {self.mac} -p 9"
