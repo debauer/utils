@@ -31,11 +31,11 @@ class BackupHost:
         hostname = socket.gethostname()
         return f"{self.base_backup_folder}/{hostname}/rsync"
 
-    def _call(self, cmd: Union[str, list]) -> Any:
+    def _call(self, cmd: Union[str, list], *, verbose: bool = False) -> Any:
         cmd_splitted = cmd.split(" ") if isinstance(cmd, str) else cmd
-        output = None if self.verbose else subprocess.DEVNULL
+        output = None if verbose else subprocess.DEVNULL
         try:
-            return subprocess.call(cmd_splitted, stdout=None, stderr=None)  # noqa: S603
+            return subprocess.call(cmd_splitted, stdout=output, stderr=output)  # noqa: S603
         except KeyboardInterrupt:
             sys.exit()
             
