@@ -17,6 +17,7 @@ kernel_info = "utils.kernel_info:main"
 sound = "utils.sound:main"
 menue = "utils.menue:main"
 ytd = "utils.ytd:main"
+wakeup = "utils.wakeup:main"
 
 [tool.poetry.dependencies]
 python = "^3.11"
